@@ -339,6 +339,24 @@ tbody tr:hover td{background:rgba(124,179,66,.03);}
   .field-row{flex-wrap:wrap;}
 }
 
+/* ── BARRA DE ARRASTRE MANUAL (respaldo cuando el deslizamiento táctil falla) ── */
+.drag-scroll-track{
+  position:fixed;top:env(safe-area-inset-top);right:3px;bottom:env(safe-area-inset-bottom);
+  width:26px;z-index:900;display:none;touch-action:none;
+}
+.drag-scroll-track.show{display:block;}
+.drag-scroll-thumb{
+  position:absolute;left:6px;width:14px;min-height:36px;border-radius:8px;
+  background:rgba(36,26,30,.55);border:2px solid rgba(255,255,255,.85);
+  box-shadow:0 2px 8px rgba(0,0,0,.3);top:0;
+}
+.drag-scroll-thumb::after{
+  content:'';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  width:4px;height:16px;border-radius:2px;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.9) 0 2px,transparent 2px 5px);
+}
+@media(min-width:768px){.drag-scroll-track{display:none!important;}}
+
 /* ── VISTA INDEPENDIENTE DE CLIENTE ── */
 body.client-mode #app{display:none;}
 #clientStandalone{display:none;}
@@ -491,6 +509,9 @@ body.booting #app, body.booting #clientStandalone{display:none!important;}
   </div>
 
   <div class="toast-wrap" id="toastWrap"></div>
+  <div id="dragScrollTrack" class="drag-scroll-track">
+    <div id="dragScrollThumb" class="drag-scroll-thumb"></div>
+  </div>
 </div>
 
 <!-- VISTA INDEPENDIENTE PARA CLIENTES (?modo=cliente) -->
@@ -742,6 +763,7 @@ function showPage(name){
   closeAllDropdowns();
   if(RENDERERS[name]) RENDERERS[name]();
   document.getElementById('screen').scrollTop = 0;
+  setTimeout(()=>{ if(typeof refreshDragScroll==='function') refreshDragScroll(); }, 50);
 }
 function navGo(name){ showPage(name); }
 function navToggleMore(e){
@@ -2438,6 +2460,7 @@ function showLoginScreen(){
   document.documentElement.classList.add('scroll-active');
   const ll = document.getElementById('loginLogoImg'); if(ll) ll.src = LOGO_DATA_URI;
   const sl = document.getElementById('loginSplashLogoImg'); if(sl) sl.src = LOGO_DATA_URI;
+  setTimeout(()=>{ if(typeof refreshDragScroll==='function') refreshDragScroll(); }, 1600);
 }
 function hideLoginScreen(){
   document.getElementById('loginScreen').classList.remove('show');
@@ -2445,6 +2468,7 @@ function hideLoginScreen(){
   document.documentElement.classList.remove('scroll-active');
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
+  setTimeout(()=>{ if(typeof refreshDragScroll==='function') refreshDragScroll(); }, 50);
 }
 
 let autoSeedChecked = false;
@@ -2473,7 +2497,91 @@ const CLIENT_MODE = new URLSearchParams(location.search).get('modo') === 'client
 function renderClientStandalone(){
   const el = document.getElementById('clientStandalone');
   el.innerHTML = `<div class="client-standalone-wrap">${buildClientFormCard()}<div class="client-standalone-footer">Pedido gestionado con LIME Repostería</div></div>`;
+  setTimeout(()=>{ if(typeof refreshDragScroll==='function') refreshDragScroll(); }, 50);
 }
+
+/* ============================================================
+   BARRA DE ARRASTRE MANUAL — respaldo para desplazarse
+   cuando el deslizamiento táctil normal no responde.
+   Detecta automáticamente cuál es el contenido activo
+   (login, formulario de cliente, o la página actual del panel)
+   y mueve su scroll según la posición del dedo.
+   ============================================================ */
+function dsActiveTarget(){
+  if(document.body.classList.contains('login-active') || document.body.classList.contains('client-mode')){
+    return {el:null, isBody:true};
+  }
+  return {el:document.getElementById('screen'), isBody:false};
+}
+function dsMetrics(){
+  const {el, isBody} = dsActiveTarget();
+  if(isBody){
+    return {
+      ch: window.innerHeight,
+      sh: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
+      st: window.scrollY || document.documentElement.scrollTop || document.body.scrollTop,
+      isBody: true, el: null
+    };
+  }
+  if(!el) return null;
+  return { ch: el.clientHeight, sh: el.scrollHeight, st: el.scrollTop, isBody:false, el };
+}
+function refreshDragScroll(){
+  const track = document.getElementById('dragScrollTrack');
+  const thumb = document.getElementById('dragScrollThumb');
+  if(!track || !thumb) return;
+  const m = dsMetrics();
+  if(!m || m.sh <= m.ch + 4){ track.classList.remove('show'); return; }
+  track.classList.add('show');
+  const trackH = track.clientHeight;
+  const thumbH = Math.max(36, trackH * (m.ch / m.sh));
+  thumb.style.height = thumbH + 'px';
+  const maxScroll = m.sh - m.ch;
+  const thumbTop = maxScroll > 0 ? (trackH - thumbH) * (m.st / maxScroll) : 0;
+  thumb.style.top = thumbTop + 'px';
+}
+let dsDragging = false, dsStartY = 0, dsStartScroll = 0;
+function dsOnStart(e){
+  dsDragging = true;
+  dsStartY = e.touches ? e.touches[0].clientY : e.clientY;
+  const m = dsMetrics();
+  dsStartScroll = m ? m.st : 0;
+  e.preventDefault();
+}
+function dsOnMove(e){
+  if(!dsDragging) return;
+  const y = e.touches ? e.touches[0].clientY : e.clientY;
+  const dy = y - dsStartY;
+  const m = dsMetrics();
+  if(!m) return;
+  const track = document.getElementById('dragScrollTrack');
+  const thumb = document.getElementById('dragScrollThumb');
+  const maxScroll = m.sh - m.ch;
+  const usable = track.clientHeight - thumb.clientHeight;
+  const scrollDelta = usable > 0 ? (dy / usable) * maxScroll : 0;
+  const newScroll = Math.min(maxScroll, Math.max(0, dsStartScroll + scrollDelta));
+  if(m.isBody) window.scrollTo(0, newScroll);
+  else if(m.el) m.el.scrollTop = newScroll;
+  refreshDragScroll();
+  e.preventDefault();
+}
+function dsOnEnd(){ dsDragging = false; }
+function initDragScroll(){
+  const thumb = document.getElementById('dragScrollThumb');
+  if(!thumb) return;
+  thumb.addEventListener('touchstart', dsOnStart, {passive:false});
+  thumb.addEventListener('touchmove', dsOnMove, {passive:false});
+  thumb.addEventListener('touchend', dsOnEnd);
+  thumb.addEventListener('touchcancel', dsOnEnd);
+  thumb.addEventListener('mousedown', dsOnStart);
+  window.addEventListener('mousemove', dsOnMove);
+  window.addEventListener('mouseup', dsOnEnd);
+  window.addEventListener('resize', refreshDragScroll);
+  window.addEventListener('scroll', refreshDragScroll, true);
+  setInterval(refreshDragScroll, 400);
+  refreshDragScroll();
+}
+initDragScroll();
 
 async function boot(){
   await initFirebase();
