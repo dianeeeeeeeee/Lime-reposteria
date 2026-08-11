@@ -43,7 +43,8 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+html,body{height:100%;overflow:hidden;}
+html.scroll-active, body.scroll-active{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
 body{font-family:var(--font);background:var(--bg);color:var(--text);overscroll-behavior:none;font-size:14px;-webkit-font-smoothing:antialiased;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 @keyframes slideDown{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
@@ -54,8 +55,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);overscroll-b
 @keyframes cardRiseIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 
 /* ── LAYOUT ── */
-#app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
-#screen{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;min-height:0;}
+#screen{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);}
 
 /* ── TOPBAR (mobile only) ── */
 .topbar{
@@ -353,7 +354,6 @@ body.client-mode #clientStandalone{
 /* ── LOGIN / LOADING ── */
 body.login-active #app{display:none;}
 body.login-active #clientStandalone{display:none;}
-html.scroll-active, body.scroll-active{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
 #loginScreen{position:relative;width:100%;min-height:100dvh;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;padding-top:max(20px, env(safe-area-inset-top));padding-bottom:calc(40px + env(safe-area-inset-bottom));background:#1c2414;box-sizing:border-box;}
 #loginScreen.show{display:flex;}
 .login-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:6vh;margin-bottom:28px;flex-shrink:0;}
@@ -410,7 +410,7 @@ body.booting #app, body.booting #clientStandalone{display:none!important;}
     </div>
   </div>
 
-  <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;min-height:0;">
     <!-- TOPBAR (mobile) -->
     <div class="topbar">
       <div class="logo"><img id="topbarLogoImg" alt="LIME"></div>
