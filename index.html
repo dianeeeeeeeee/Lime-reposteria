@@ -341,16 +341,22 @@ tbody tr:hover td{background:rgba(124,179,66,.03);}
 /* ── VISTA INDEPENDIENTE DE CLIENTE ── */
 body.client-mode #app{display:none;}
 #clientStandalone{display:none;}
+body.client-mode{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
+html.scroll-active{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
 body.client-mode #clientStandalone{
-  display:block;position:fixed;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:block;position:relative;min-height:100dvh;
   background:linear-gradient(160deg,var(--accent-light) 0%,var(--bg) 60%);
   padding:32px 16px calc(32px + env(safe-area-inset-bottom));
+  box-sizing:border-box;
 }
 .client-standalone-wrap{max-width:480px;margin:0 auto;}
 .client-standalone-footer{text-align:center;font-size:11px;color:var(--muted);margin-top:18px;}
 
 /* ── LOGIN / LOADING ── */
-#loginScreen{position:fixed;inset:0;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;padding-top:max(20px, env(safe-area-inset-top));padding-bottom:calc(20px + env(safe-area-inset-bottom));background:#1c2414;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+body.login-active #app{display:none;}
+body.login-active #clientStandalone{display:none;}
+html.scroll-active, body.scroll-active{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
+#loginScreen{position:relative;width:100%;min-height:100dvh;z-index:500;display:none;flex-direction:column;align-items:center;justify-content:flex-start;padding:20px;padding-top:max(20px, env(safe-area-inset-top));padding-bottom:calc(40px + env(safe-area-inset-bottom));background:#1c2414;box-sizing:border-box;}
 #loginScreen.show{display:flex;}
 .login-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-top:6vh;margin-bottom:28px;flex-shrink:0;}
 .login-splash-logo{opacity:0;animation:logoFadeIn 1s ease .2s forwards;}
@@ -2430,11 +2436,15 @@ function doLogout(){
 }
 function showLoginScreen(){
   document.getElementById('loginScreen').classList.add('show');
+  document.body.classList.add('login-active');
+  document.documentElement.classList.add('scroll-active');
   const ll = document.getElementById('loginLogoImg'); if(ll) ll.src = LOGO_DATA_URI;
   const sl = document.getElementById('loginSplashLogoImg'); if(sl) sl.src = LOGO_DATA_URI;
 }
 function hideLoginScreen(){
   document.getElementById('loginScreen').classList.remove('show');
+  document.body.classList.remove('login-active');
+  document.documentElement.classList.remove('scroll-active');
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
 }
@@ -2472,6 +2482,7 @@ async function boot(){
 
   if(CLIENT_MODE){
     document.body.classList.add('client-mode');
+    document.documentElement.classList.add('scroll-active');
     document.body.classList.remove('booting');
     renderClientStandalone();
     return;
