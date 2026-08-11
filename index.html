@@ -341,8 +341,6 @@ tbody tr:hover td{background:rgba(124,179,66,.03);}
 /* ── VISTA INDEPENDIENTE DE CLIENTE ── */
 body.client-mode #app{display:none;}
 #clientStandalone{display:none;}
-body.client-mode{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
-html.scroll-active{overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
 body.client-mode #clientStandalone{
   display:block;position:relative;min-height:100dvh;
   background:linear-gradient(160deg,var(--accent-light) 0%,var(--bg) 60%);
@@ -2436,14 +2434,14 @@ function doLogout(){
 }
 function showLoginScreen(){
   document.getElementById('loginScreen').classList.add('show');
-  document.body.classList.add('login-active');
+  document.body.classList.add('login-active', 'scroll-active');
   document.documentElement.classList.add('scroll-active');
   const ll = document.getElementById('loginLogoImg'); if(ll) ll.src = LOGO_DATA_URI;
   const sl = document.getElementById('loginSplashLogoImg'); if(sl) sl.src = LOGO_DATA_URI;
 }
 function hideLoginScreen(){
   document.getElementById('loginScreen').classList.remove('show');
-  document.body.classList.remove('login-active');
+  document.body.classList.remove('login-active', 'scroll-active');
   document.documentElement.classList.remove('scroll-active');
   document.getElementById('loginPass').value = '';
   document.getElementById('loginError').textContent = '';
@@ -2481,7 +2479,7 @@ async function boot(){
   await initFirebase();
 
   if(CLIENT_MODE){
-    document.body.classList.add('client-mode');
+    document.body.classList.add('client-mode', 'scroll-active');
     document.documentElement.classList.add('scroll-active');
     document.body.classList.remove('booting');
     renderClientStandalone();
