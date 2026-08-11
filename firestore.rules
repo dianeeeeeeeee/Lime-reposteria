@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// Reglas de seguridad para LIME Repostería
+// - config/main: cualquiera puede LEER (el formulario de cliente necesita ver
+//   nombre del negocio, tamaños, panes, rellenos), pero solo el admin autenticado
+//   puede ESCRIBIR (Ajustes).
+// - solicitudes/{id}: cualquiera puede CREAR (formulario de cliente), pero solo
+//   el admin autenticado puede LEER, ACTUALIZAR o BORRAR (panel "Solicitudes").
+// - Todo lo demás (insumos, recetas, clientes, pedidos, ventas, movimientos):
+//   solo el admin autenticado puede leer y escribir. Nadie más tiene acceso.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /config/main {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    match /solicitudes/{id} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+
+    match /insumos/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /recetas/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /clientes/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /pedidos/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /ventas/{id} {
+      allow read, write: if request.auth != null;
+    }
+    match /movimientos/{id} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Cualquier otra ruta: denegado por defecto (comportamiento estándar de Firestore).
+  }
+}
